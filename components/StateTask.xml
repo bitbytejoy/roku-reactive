@@ -3,8 +3,7 @@
 <component name="StateTask" extends="Task">
   <interface>
     <field id="queue" type="array" value="[]"/>
-    <field id="index" type="int" value="0"/>
-    <field id="ip" type="assocarray"/>
+    <field id="appState" type="assocarray"/>
   </interface>
 
   <script type="text/brightscript" uri="pkg:/util/logFunction.brs"/>
@@ -13,6 +12,7 @@
     sub init()
       logFunction("StateTask", "init")
       m.top.functionName = "loop"
+      m.top.appState = { count: 0, ip: { origin: "n/a - press left to refresh" } }
       m.hold = 500
     end sub
 
@@ -30,9 +30,9 @@
           m.top.queue = q
 
           if event.type = "count" then
-            count()
+            m.top.appState = count(m.top.appState)
           else if event.type = "refresh_ip" then
-            refreshIp()
+            m.top.appState = refreshIp(m.top.appState)
           end if
 
           ' TODO: Remove this when not testing
@@ -48,12 +48,13 @@
       m.top.queue = q
     end function
 
-    function count() as void
+    function count(appState as object) as object
       logFunction("StateTask", "count")
-      m.top.index = m.top.index + 1
+      appState.count = appState.count + 1 
+      return appState
     end function
 
-    function refreshIp() as void
+    function refreshIp(state as object) as object
       logFunction("StateTask", "refreshIp")
 
       url = "https://helloacm.com/api/random/?n=128"
@@ -76,8 +77,8 @@
         body = event.getString()
         print url + " response => code: " + stri(code) + " body: " + body
         if code = 200 then
-          m.top.ip = parseJson(body)
-          print "Parsed the JSON"
+          state.ip = parseJson(body)
+          return state
         else
           ' Well shit, something went wrong
         end if

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+
+<component name="Ip" extends="Group">
+  <script type="text/brightscript" uri="pkg:/util/logFunction.brs"/>
+  <script type="text/brightscript" uri="pushEvent.brs"/>
+  <script type="text/brightscript">
+    <![CDATA[
+    sub init()
+      logFunction("Ip", "init")
+
+      m.top.setFocus(true)
+      m.top.backgroundURI = "pkg:/images/purplebg.jpg"
+
+      m.ipLabel = m.top.findNode("ipLabel")
+
+      m.scene = m.top.getScene()
+      onStateChanged()
+      m.top.observeField("appState", "onStateChanged")
+    end sub
+
+    function onKeyEvent(key as String, press as Boolean) as Boolean
+      logFunction("Ip", "onKeyEvent")
+
+      handled = false
+
+      if press then
+        if (key = "left") then
+          m.scene.callFunc("queueEvent", { type: "refresh_ip" })
+          handled = true
+        end if
+      end if
+
+      return handled
+    end function
+
+    function onStateChanged() as void
+      logFunction("Ip", "onStateChanged", [ m.top.appState ])
+      if m.top.appState <> invalid then
+        m.ipLabel.text = "IP: " + m.top.appState.ip.origin
+      end if
+    end function
+    ]]>
+  </script>
+
+  <interface>
+    <field id="appState" type="assocarray"/>
+  </interface>
+
+  <children>
+    <Label
+      id="ipLabel"
+      text="IP: N/A &lt;Press left to refresh&gt;"
+      translation="[550,400]"/>
+  </children>
+</component>

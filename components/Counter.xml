@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+
+<component name="Counter" extends="Group">
+  <script type="text/brightscript" uri="pkg:/util/logFunction.brs"/>
+  <script type="text/brightscript">
+    <![CDATA[
+    sub init()
+      logFunction("Counter", "init")
+
+      m.top.backgroundURI = "pkg:/images/purplebg.jpg"
+
+      m.countLabel = m.top.findNode("countLabel")
+
+      m.scene = m.top.getScene()
+      onStateChanged()
+      m.top.observeField("appState", "onStateChanged")
+    end sub
+
+    function onKeyEvent(key as string, press as boolean) as boolean
+      logFunction("Counter", "onKeyEvent")
+
+      handled = false
+
+      if press then
+        if (key = "up") then
+          m.scene.callFunc("queueEvent", { type: "count" })
+          handled = true
+        end if
+      end if
+
+      return handled
+    end function
+
+    function onStateChanged() as void
+      logFunction("Counter", "onStateChanged", [ m.top.appState ])
+      if m.top.appState <> invalid then
+        m.countLabel.text = "Count " + stri(m.top.appState.count)
+      end if
+    end function
+    ]]>
+  </script>
+
+  <interface>
+    <field id="appState" type="assocarray"/>
+  </interface>
+
+  <children>
+    <Label
+      id="countLabel"
+      text="Count 0"
+      translation="[550,350]"/>
+  </children>
+</component>

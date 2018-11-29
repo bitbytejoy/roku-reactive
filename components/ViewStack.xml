@@ -11,14 +11,23 @@
       m.top.setFocus(true)
       m.top.backgroundURI = "pkg:/images/purplebg.jpg"
 
-      m.indexLabel = m.top.findNode("indexLabel")
-      m.ipLabel = m.top.findNode("ipLabel")
-
-      m.stateTask = CreateObject("roSGNode", "StateTask")
-      m.stateTask.observeField("index", "onIndexChanged")
-      m.stateTask.observeField("ip", "onIpChanged")
+      m.stateTask = createObject("roSGNode", "StateTask")
       m.stateTask.control = "RUN"
+      m.stateTask.observeField("appState", "onStateChanged")
+
+      m.counter = m.top.findNode("counter")
+      m.ip = m.top.findNode("ip")
+      m.viewStack = []
+      transitionTo(m.counter)
     end sub
+
+    function onStateChanged() as void
+      logFunction("ViewStack", "onStateChanged")
+      view = m.viewStack.peek()
+      if view <> invalid then
+        view.appState = m.stateTask.appState
+      end if
+    end function
 
     function onKeyEvent(key as String, press as Boolean) as Boolean
       logFunction("ViewStack", "onKeyEvent")
@@ -26,42 +35,53 @@
       handled = false
 
       if press then
-        if (key = "up") then
-          pushEvent(m.stateTask, { type: "count" })
+        if key = "right" then
+          transitionTo(m.ip)
           handled = true
-        else if (key = "left") then
-          pushEvent(m.stateTask, { type: "refresh_ip" })
+        else if key = "back" then
+          pop()
+          handled = true
         end if
       end if
 
       return handled
     end function
 
-    function onIndexChanged() as void
-      logFunction("ViewStack", "onIndexChanged")
-      m.indexLabel.text = "Count " + stri(m.stateTask.index)
+    function transitionTo(view) as void
+      logFunction("ViewStack", "transitionTo", [ view.subtype() ])
+
+      for each v in m.viewStack
+        v.visible = false
+      end for
+
+      m.viewStack.push(view)
+      view.appState = m.stateTask.appState
+      view.visible = true
+      view.setFocus(true)
     end function
 
-    function onIpChanged() as void
-      logFunction("ViewStack", "onIpChanged")
-      m.ipLabel.text = "IP: " + m.stateTask.ip.origin
+    function pop() as void
+      view = m.viewStack.pop()
+      view.visible = false
+      previousView = m.viewStack.peek()
+      previousView.appState = m.stateTask.appState
+      previousView.visible = true
+      previousView.setFocus(true)
+    end function
+
+    function queueEvent(params as object) as void
+      logFunction("ViewStack", "queueEvent", [ params ])
+      pushEvent(m.stateTask, params)
     end function
     ]]>
   </script>
 
   <interface>
-    <field id="viewStack" type="array" value="[]"/>
+    <function name="queueEvent"/>
   </interface>
 
   <children>
-    <Label
-      id="indexLabel"
-      text="Iteration 0"
-      translation="[550,350]"/>
-
-    <Label
-      id="ipLabel"
-      text="IP: N/A &lt;Press left to refresh&gt;"
-      translation="[550,400]"/>
+    <Counter id="counter"/>
+    <Ip id="ip" visible="false"/>
   </children>
 </component>
