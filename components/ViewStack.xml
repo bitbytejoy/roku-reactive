@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+
+<component name="ViewStack" extends="Scene">
+  <script type="text/brightscript" uri="pkg:/util/logFunction.brs"/>
+  <script type="text/brightscript" uri="pushEvent.brs"/>
+  <script type="text/brightscript">
+    <![CDATA[
+    sub init()
+      logFunction("ViewStack", "init")
+
+      m.top.setFocus(true)
+      m.top.backgroundURI = "pkg:/images/purplebg.jpg"
+
+      m.indexLabel = m.top.findNode("indexLabel")
+      m.ipLabel = m.top.findNode("ipLabel")
+
+      m.stateTask = CreateObject("roSGNode", "StateTask")
+      m.stateTask.observeField("index", "onIndexChanged")
+      m.stateTask.observeField("ip", "onIpChanged")
+      m.stateTask.control = "RUN"
+    end sub
+
+    function onKeyEvent(key as String, press as Boolean) as Boolean
+      logFunction("ViewStack", "onKeyEvent")
+
+      handled = false
+
+      if press then
+        if (key = "up") then
+          pushEvent(m.stateTask, { type: "count" })
+          handled = true
+        else if (key = "left") then
+          pushEvent(m.stateTask, { type: "refresh_ip" })
+        end if
+      end if
+
+      return handled
+    end function
+
+    function onIndexChanged() as void
+      logFunction("ViewStack", "onIndexChanged")
+      m.indexLabel.text = "Count " + stri(m.stateTask.index)
+    end function
+
+    function onIpChanged() as void
+      logFunction("ViewStack", "onIpChanged")
+      m.ipLabel.text = "IP: " + m.stateTask.ip.origin
+    end function
+    ]]>
+  </script>
+
+  <interface>
+    <field id="viewStack" type="array" value="[]"/>
+  </interface>
+
+  <children>
+    <Label
+      id="indexLabel"
+      text="Iteration 0"
+      translation="[550,350]"/>
+
+    <Label
+      id="ipLabel"
+      text="IP: N/A &lt;Press left to refresh&gt;"
+      translation="[550,400]"/>
+  </children>
+</component>

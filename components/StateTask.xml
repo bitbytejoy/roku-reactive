@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+
+<component name="StateTask" extends="Task">
+  <interface>
+    <field id="queue" type="array" value="[]"/>
+    <field id="index" type="int" value="0"/>
+    <field id="ip" type="assocarray"/>
+  </interface>
+
+  <script type="text/brightscript" uri="pkg:/util/logFunction.brs"/>
+  <script type="text/brightscript" >
+    <![CDATA[
+    sub init()
+      logFunction("StateTask", "init")
+      m.top.functionName = "loop"
+      m.hold = 500
+    end sub
+
+    function loop() as void
+      while true
+        logFunction("StateTask", "loop")
+
+        print "queue before next loop" + formatJson(m.top.queue)
+
+        if m.top.queue.count() < 1 then
+          sleep(m.hold)
+        else
+          q = m.top.queue
+          event = q.shift()
+          m.top.queue = q
+
+          if event.type = "count" then
+            count()
+          else if event.type = "refresh_ip" then
+            refreshIp()
+          end if
+
+          ' TODO: Remove this when not testing
+          sleep(m.hold)
+        end if
+      end while
+    end function
+
+    function queue(event) as void
+      logFunction("StateTask", "queue", [ event ])
+      q = m.top.queue
+      q.push(event)
+      m.top.queue = q
+    end function
+
+    function count() as void
+      logFunction("StateTask", "count")
+      m.top.index = m.top.index + 1
+    end function
+
+    function refreshIp() as void
+      logFunction("StateTask", "refreshIp")
+
+      url = "https://helloacm.com/api/random/?n=128"
+      print "curl -X GET " + url
+      http = createObject("roUrlTransfer")
+      http.SetCertificatesFile("common:/certs/ca-bundle.crt")
+      http.AddHeader("X-Roku-Reserved-Dev-Id", "")
+      http.InitClientCertificates()
+      http.setPort(createObject("roMessagePort"))
+      http.setUrl("https://httpbin.org/ip")
+      http.addHeader("Content-Type", "application/json")
+      http.asyncGetToString()
+      event = wait(30000, http.getPort())
+      if event = invalid then
+        print "Timed out on " + url 
+        ' Guess there was no answer
+        ' Either the network shit the bed or the server shit the bed
+      else if type(event) = "roUrlEvent" then
+        code = event.getResponseCode()
+        body = event.getString()
+        print url + " response => code: " + stri(code) + " body: " + body
+        if code = 200 then
+          m.top.ip = parseJson(body)
+          print "Parsed the JSON"
+        else
+          ' Well shit, something went wrong
+        end if
+      end if
+    end function
+    ]]>
+  </script>
+</component>
